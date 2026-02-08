@@ -3,3 +3,9 @@
 venv/
 __pycache__/
 *.pyc
+meeting_data/
+frames/
+evaluation.json
+meeting_report.md
+latest_meeting.json
+node_modules/

@@ -1,0 +1,12 @@
+{
+  "name": "sense-video-check-report",
+  "version": "1.0.0",
+  "description": "DAiSEE model inference for meeting frames",
+  "type": "module",
+  "scripts": {
+    "evaluate": "node evaluate_frames.mjs"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs-node": "^4.22.0"
+  }
+}

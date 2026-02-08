@@ -1,5 +1,5 @@
 # Veri HF'e gittikten sonra tetiklenir (repository_dispatch).
-# HF'den en son toplantı kaydını alır; çıktı sonraki adımlar için kullanılır.
+# 1) En son toplantı verisini alır 2) İndirir 3) Frame çıkarır 4) DAiSEE ile değerlendirir 5) Rapor üretir.
 # Repo secret: SENSEAI (Hugging Face token)
 
 name: Fetch latest meeting data
@@ -12,7 +12,7 @@ on:
     types: [hf_dataset_update]
 
 jobs:
-  fetch:
+  fetch-and-report:
     runs-on: ubuntu-latest
     outputs:
       latest_folder: ${{ steps.fetch.outputs.latest_folder }}
@@ -25,8 +25,20 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Fetch latest meeting from HF
         id: fetch
@@ -36,9 +48,31 @@ jobs:
           python get_latest_meeting.py --output latest_meeting.json
           echo "latest_folder=$(jq -r '.latest_folder' latest_meeting.json)" >> $GITHUB_OUTPUT
 
-      - name: Upload meeting metadata
+      - name: Download meeting files (webm + txt)
+        env:
+          SENSEAI: ${{ secrets.SENSEAI }}
+        run: python download_meeting.py
+
+      - name: Extract frames (0.5s)
+        run: python extract_frames.py
+
+      - name: Evaluate frames (DAiSEE)
+        run: npm run evaluate
+
+      - name: Generate meeting report
+        run: python generate_report.py
+
+      - name: Upload report to HF (toplantı klasörüne)
+        env:
+          SENSEAI: ${{ secrets.SENSEAI }}
+        run: python upload_report_to_hf.py
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: latest-meeting
-          path: latest_meeting.json
+          name: meeting-report
+          path: |
+            latest_meeting.json
+            meeting_report.md
+            evaluation.json
           retention-days: 30
