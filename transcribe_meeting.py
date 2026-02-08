@@ -61,17 +61,20 @@ def run_transcription(wav_path: Path, hf_token: str) -> dict | None:
     """WhisperX: transcribe -> align -> diarize -> assign_word_speakers. Dönen sonuç segments içerir."""
     try:
         import torch
-        # PyTorch 2.6+ weights_only=True: pyannote VAD checkpoint (omegaconf) yüklenebilsin
+        # PyTorch 2.6+ weights_only=True: pyannote VAD checkpoint yüklenebilsin
         if hasattr(torch.serialization, "add_safe_globals"):
+            import typing
+            _safe = [typing.Any]
             try:
-                from omegaconf.listconfig import ListConfig
-                from omegaconf.dictconfig import DictConfig
-                from omegaconf.base import ContainerMetadata
-                torch.serialization.add_safe_globals([ListConfig, DictConfig, ContainerMetadata])
+                from omegaconf.listconfig import ListConfig  # type: ignore[reportMissingImports]
+                from omegaconf.dictconfig import DictConfig  # type: ignore[reportMissingImports]
+                from omegaconf.base import ContainerMetadata  # type: ignore[reportMissingImports]
+                _safe.extend([ListConfig, DictConfig, ContainerMetadata])
             except Exception:
                 pass
-        import whisperx
-        from whisperx.diarize import DiarizationPipeline, assign_word_speakers
+            torch.serialization.add_safe_globals(_safe)
+        import whisperx  # type: ignore[reportMissingImports]
+        from whisperx.diarize import DiarizationPipeline, assign_word_speakers  # type: ignore[reportMissingImports]
     except ImportError as e:
         print("HATA: whisperx veya bağımlılıkları yüklü değil:", e, file=sys.stderr)
         print("Kurulum: pip install whisperx torch", file=sys.stderr)
