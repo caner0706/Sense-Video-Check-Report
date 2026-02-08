@@ -1,0 +1,32 @@
+# HF'den en son toplantı kaydı verisini otomatik alır.
+# Repo secret: SENSEAI (Hugging Face token)
+
+name: Fetch latest meeting data
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Her gün 09:00 UTC (12:00 Türkiye) - istersen değiştirirsin
+    - cron: "0 9 * * *"
+  workflow_dispatch: # Actions sekmesinden manuel çalıştırma
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch latest meeting from HF
+        env:
+          SENSEAI: ${{ secrets.SENSEAI }}
+        run: python get_latest_meeting.py
