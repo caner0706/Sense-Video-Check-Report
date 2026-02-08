@@ -8,7 +8,6 @@ Token: Ortam değişkeni SENSEAI veya HF_TOKEN (GitHub secret adı SENSEAI).
 
 import os
 import re
-from datetime import datetime
 from pathlib import Path
 
 from huggingface_hub import HfFileSystem
@@ -38,31 +37,10 @@ def parse_folder_name(name: str) -> tuple[str, int] | None:
     return (date, num)
 
 
-def _folder_last_modified(hffs: HfFileSystem, folder_path: str) -> float | None:
-    """Klasör içindeki dosyaların en son değişim zamanını döner (epoch). Yoksa None."""
-    try:
-        entries = hffs.ls(folder_path, detail=True)
-    except Exception:
-        return None
-    latest = None
-    for e in entries:
-        m = e.get("modified") or e.get("mtime")
-        if m is not None:
-            try:
-                ts = float(m) if isinstance(m, (int, float)) else m
-                if isinstance(ts, str):
-                    ts = datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
-                if latest is None or ts > latest:
-                    latest = ts
-            except (TypeError, ValueError):
-                pass
-    return latest
-
-
 def get_latest_meeting_folder(hffs: HfFileSystem) -> str | None:
     """
     'Toplantı Kayıtları' altındaki alt klasörleri listeler,
-    zaman damgası (modified) en son olanı döner; yoksa isimden (gtN/hfN_YYYY-MM-DD) sıralar.
+    isimden (hfN_YYYY-MM-DD) en son olanı döner.
     """
     try:
         entries = hffs.ls(BASE_PATH, detail=False)
@@ -70,28 +48,23 @@ def get_latest_meeting_folder(hffs: HfFileSystem) -> str | None:
         print(f"Klasör listelenemedi: {e}")
         return None
 
-    folders: list[tuple[str, float | None, tuple[str, int]]] = []  # (name, mtime, name_sort)
+    # Sadece alt klasör isimlerini al (path'in son parçası)
+    folders: list[tuple[tuple[str, int], str]] = []
     for path in entries:
         parts = path.rstrip("/").split("/")
         if len(parts) < 2:
             continue
         folder_name = parts[-1]
         parsed = parse_folder_name(folder_name)
-        if not parsed:
-            continue
-        folder_path = f"{BASE_PATH}/{folder_name}"
-        mtime = _folder_last_modified(hffs, folder_path)
-        folders.append((folder_name, mtime, parsed))
+        if parsed:
+            folders.append((parsed, folder_name))
 
     if not folders:
         return None
 
-    # Önce zaman damgası (en büyük = en son), yoksa isim (tarih, numara)
-    def sort_key(item: tuple) -> tuple:
-        name, mtime, name_sort = item
-        return (mtime if mtime is not None else -1.0, name_sort[0], name_sort[1])
-    folders.sort(key=sort_key, reverse=True)
-    return folders[0][0]
+    # En son: önce tarih, sonra numara büyük olsun
+    folders.sort(key=lambda x: (x[0][0], x[0][1]), reverse=True)
+    return folders[0][1]
 
 
 def get_latest_meeting_data(token: str | None = None) -> dict:
