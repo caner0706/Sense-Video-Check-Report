@@ -66,7 +66,8 @@ def run_transcription(wav_path: Path, hf_token: str) -> dict | None:
             try:
                 from omegaconf.listconfig import ListConfig
                 from omegaconf.dictconfig import DictConfig
-                torch.serialization.add_safe_globals([ListConfig, DictConfig])
+                from omegaconf.base import ContainerMetadata
+                torch.serialization.add_safe_globals([ListConfig, DictConfig, ContainerMetadata])
             except Exception:
                 pass
         import whisperx
