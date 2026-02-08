@@ -6,6 +6,8 @@ en son eklenen toplantı klasörünün verilerini listeler ve bilgi döner.
 Token: Ortam değişkeni SENSEAI veya HF_TOKEN (GitHub secret adı SENSEAI).
 """
 
+import argparse
+import json
 import os
 import re
 from pathlib import Path
@@ -28,9 +30,9 @@ def get_token() -> str | None:
 def parse_folder_name(name: str) -> tuple[str, int] | None:
     '''
     "hf3_2026-02-08" veya "gt1_2026-02-08" -> ("2026-02-08", num).
-    Sıralama için (tarih, numara) döner. hf/gt vb. prefix desteklenir.
+    Sıralama için (tarih, numara) döner.
     '''
-    m = re.match(r"^[a-zA-Z]+(\d+)_(\d{4}-\d{2}-\d{2})$", name.strip())
+    m = re.match(r"(?:hf|gt)(\d+)_(\d{4}-\d{2}-\d{2})$", name.strip(), re.IGNORECASE)
     if not m:
         return None
     num, date = int(m.group(1)), m.group(2)
@@ -55,6 +57,8 @@ def get_latest_meeting_folder(hffs: HfFileSystem) -> str | None:
         if len(parts) < 2:
             continue
         folder_name = parts[-1]
+        if not (folder_name.lower().startswith("hf") or folder_name.lower().startswith("gt")):
+            continue
         parsed = parse_folder_name(folder_name)
         if parsed:
             folders.append((parsed, folder_name))
@@ -67,10 +71,12 @@ def get_latest_meeting_folder(hffs: HfFileSystem) -> str | None:
     return folders[0][1]
 
 
-def get_latest_meeting_data(token: str | None = None, folder_name: str | None = None) -> dict:
+def get_latest_meeting_data(token: str | None = None) -> dict:
     """
-    HF'den toplantı klasörünün verilerini döner.
-    folder_name verilirse onu kullanır (tetikleyici payload'dan); yoksa en son klasörü bulur.
+    HF'den en son toplantı klasörünün verilerini döner.
+    - latest_folder: en son klasör adı (örn. hf3_2026-02-08)
+    - files: dosya listesi (path, size bilgisi)
+    - base_path: bu klasörün HF path'i
     """
     t = token or get_token()
     if not t:
@@ -84,7 +90,7 @@ def get_latest_meeting_data(token: str | None = None, folder_name: str | None = 
 
     hffs = HfFileSystem(token=t)
 
-    latest = (folder_name or os.environ.get("MEETING_FOLDER") or "").strip() or get_latest_meeting_folder(hffs)
+    latest = get_latest_meeting_folder(hffs)
     if not latest:
         return {
             "ok": False,
@@ -129,26 +135,35 @@ def get_latest_meeting_data(token: str | None = None, folder_name: str | None = 
 
 
 def main():
-    import json
     from dotenv import load_dotenv
     load_dotenv()
 
-    # Tetikleyici payload'dan veya MEETING_FOLDER env'den klasör adı (örn. gt3_2026-02-08)
-    folder = os.environ.get("MEETING_FOLDER")
-    data = get_latest_meeting_data(folder_name=folder)
-    output_json = os.environ.get("OUTPUT_JSON")
+    parser = argparse.ArgumentParser(description="HF'den en son toplantı klasörünü listeler.")
+    parser.add_argument("--output", "-o", metavar="FILE", help="Sonucu JSON dosyasına yazar (workflow için)")
+    args = parser.parse_args()
 
+    data = get_latest_meeting_data()
     if not data["ok"]:
         print("HATA:", data["error"])
-        if output_json:
-            with open(output_json, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+        if args.output:
+            out = {k: v for k, v in data.items() if k != "ok"}
+            Path(args.output).write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
         return 1
 
-    if output_json:
-        with open(output_json, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        print("Çıktı:", output_json)
+    if args.output:
+        Path(args.output).write_text(
+            json.dumps(
+                {
+                    "latest_folder": data["latest_folder"],
+                    "base_path": data["base_path"],
+                    "repo_id": data["repo_id"],
+                    "files": data["files"],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
     print("En son toplantı klasörü:", data["latest_folder"])
     print("Path:", data["base_path"])

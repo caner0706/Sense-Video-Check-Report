@@ -1,4 +1,5 @@
-# HF'den en son toplantı kaydı verisini otomatik alır.
+# Veri HF'e gittikten sonra tetiklenir (repository_dispatch).
+# HF'den en son toplantı kaydını alır; çıktı sonraki adımlar için kullanılır.
 # Repo secret: SENSEAI (Hugging Face token)
 
 name: Fetch latest meeting data
@@ -13,6 +14,8 @@ on:
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    outputs:
+      latest_folder: ${{ steps.fetch.outputs.latest_folder }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,23 +28,17 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Fetch latest meeting info from HF
+      - name: Fetch latest meeting from HF
+        id: fetch
         env:
           SENSEAI: ${{ secrets.SENSEAI }}
-          OUTPUT_JSON: latest_meeting.json
-          # Uygulama tetiklediyse gönderdiği klasör adı (gt3_2026-02-08); yoksa script en son klasörü bulur
-          MEETING_FOLDER: ${{ github.event.client_payload.folder }}
-        run: python get_latest_meeting.py
-
-      - name: Download latest meeting files
-        env:
-          SENSEAI: ${{ secrets.SENSEAI }}
-          LATEST_MEETING_JSON: latest_meeting.json
-          DOWNLOAD_DIR: latest_meeting
-        run: python download_latest_meeting.py
-
-      - name: Summary
         run: |
-          echo "En son toplantı verisi hazır: latest_meeting.json + latest_meeting/"
-          ls -la latest_meeting.json 2>/dev/null || true
-          find latest_meeting -type f 2>/dev/null || true
+          python get_latest_meeting.py --output latest_meeting.json
+          echo "latest_folder=$(jq -r '.latest_folder' latest_meeting.json)" >> $GITHUB_OUTPUT
+
+      - name: Upload meeting metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-meeting
+          path: latest_meeting.json
+          retention-days: 30
