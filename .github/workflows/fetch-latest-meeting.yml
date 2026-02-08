@@ -7,9 +7,9 @@ on:
   push:
     branches: [main]
   schedule:
-    # Her gün 09:00 UTC (12:00 Türkiye) - istersen değiştirirsin
-    - cron: "0 9 * * *"
-  workflow_dispatch: # Actions sekmesinden manuel çalıştırma
+    # Her 15 dakikada bir çalışır; HF'ye yeni veri gelince en geç 15 dk içinde işlenir
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
 
 jobs:
   fetch:
