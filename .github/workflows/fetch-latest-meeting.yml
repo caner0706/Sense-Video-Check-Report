@@ -29,6 +29,8 @@ jobs:
         env:
           SENSEAI: ${{ secrets.SENSEAI }}
           OUTPUT_JSON: latest_meeting.json
+          # Uygulama tetiklediyse gönderdiği klasör adı (gt3_2026-02-08); yoksa script en son klasörü bulur
+          MEETING_FOLDER: ${{ github.event.client_payload.folder }}
         run: python get_latest_meeting.py
 
       - name: Download latest meeting files

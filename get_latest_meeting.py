@@ -67,12 +67,10 @@ def get_latest_meeting_folder(hffs: HfFileSystem) -> str | None:
     return folders[0][1]
 
 
-def get_latest_meeting_data(token: str | None = None) -> dict:
+def get_latest_meeting_data(token: str | None = None, folder_name: str | None = None) -> dict:
     """
-    HF'den en son toplantı klasörünün verilerini döner.
-    - latest_folder: en son klasör adı (örn. hf3_2026-02-08)
-    - files: dosya listesi (path, size bilgisi)
-    - base_path: bu klasörün HF path'i
+    HF'den toplantı klasörünün verilerini döner.
+    folder_name verilirse onu kullanır (tetikleyici payload'dan); yoksa en son klasörü bulur.
     """
     t = token or get_token()
     if not t:
@@ -86,7 +84,7 @@ def get_latest_meeting_data(token: str | None = None) -> dict:
 
     hffs = HfFileSystem(token=t)
 
-    latest = get_latest_meeting_folder(hffs)
+    latest = (folder_name or os.environ.get("MEETING_FOLDER") or "").strip() or get_latest_meeting_folder(hffs)
     if not latest:
         return {
             "ok": False,
@@ -135,7 +133,9 @@ def main():
     from dotenv import load_dotenv
     load_dotenv()
 
-    data = get_latest_meeting_data()
+    # Tetikleyici payload'dan veya MEETING_FOLDER env'den klasör adı (örn. gt3_2026-02-08)
+    folder = os.environ.get("MEETING_FOLDER")
+    data = get_latest_meeting_data(folder_name=folder)
     output_json = os.environ.get("OUTPUT_JSON")
 
     if not data["ok"]:
