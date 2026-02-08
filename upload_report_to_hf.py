@@ -17,6 +17,7 @@ UPLOADS = [
     (Path("meeting_report.html"), "toplanti_raporu.html"),
     (Path("meeting_transcript.json"), "toplanti_transkripti.json"),
     (Path("meeting_transcript.txt"), "toplanti_transkripti.txt"),
+    (Path("meeting_transcript.html"), "toplanti_transkripti.html"),
 ]
 
 

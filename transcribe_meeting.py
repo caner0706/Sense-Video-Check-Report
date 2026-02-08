@@ -17,6 +17,7 @@ from pathlib import Path
 MEETING_DATA = Path("meeting_data")
 TRANSCRIPT_JSON = Path("meeting_transcript.json")
 TRANSCRIPT_TXT = Path("meeting_transcript.txt")
+TRANSCRIPT_HTML = Path("meeting_transcript.html")
 AUDIO_WAV = Path("meeting_audio.wav")  # geçici 16kHz mono
 
 # Ses dosyası adında aranacak anahtar kelimeler (öncelik)
@@ -133,8 +134,12 @@ def speaker_label(speaker: str) -> str:
         return speaker
 
 
+def escape_html(s: str) -> str:
+    return (s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;") if s else "")
+
+
 def write_outputs(segments: list[dict]) -> None:
-    """meeting_transcript.json ve meeting_transcript.txt yazar."""
+    """meeting_transcript.json, meeting_transcript.txt ve meeting_transcript.html yazar."""
     data = {"segments": segments, "format": "kim ne dedi"}
     TRANSCRIPT_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     print("Yazıldı:", TRANSCRIPT_JSON)
@@ -146,6 +151,36 @@ def write_outputs(segments: list[dict]) -> None:
         lines.append(f"[{t}] {label}: {s['text']}")
     TRANSCRIPT_TXT.write_text("\n".join(lines), encoding="utf-8")
     print("Yazıldı:", TRANSCRIPT_TXT)
+
+    html_lines = []
+    for s in segments:
+        t = format_time(s["start"])
+        label = speaker_label(s["speaker"])
+        text = escape_html((s.get("text") or "").strip())
+        html_lines.append(f'<div class="line"><span class="time">[{t}]</span> <span class="speaker">{label}:</span> {text}</div>')
+    html = f"""<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <title>Toplantı transkripti — kim ne dedi</title>
+  <style>
+    body {{ font-family: system-ui, sans-serif; background: #0f1419; color: #e6edf3; margin: 0; padding: 1.5rem; line-height: 1.6; max-width: 720px; margin-left: auto; margin-right: auto; }}
+    h1 {{ font-size: 1.25rem; color: #58a6ff; }}
+    .line {{ margin-bottom: 0.5rem; }}
+    .time {{ color: #8b949e; font-size: 0.85rem; margin-right: 0.5rem; }}
+    .speaker {{ font-weight: 600; color: #58a6ff; }}
+  </style>
+</head>
+<body>
+  <h1>Toplantı transkripti (kim ne dedi)</h1>
+  <div class="content">
+{chr(10).join(html_lines)}
+  </div>
+</body>
+</html>
+"""
+    TRANSCRIPT_HTML.write_text(html, encoding="utf-8")
+    print("Yazıldı:", TRANSCRIPT_HTML)
 
 
 def main() -> int:

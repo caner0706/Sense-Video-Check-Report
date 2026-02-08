@@ -84,5 +84,6 @@ jobs:
             meeting_report.html
             meeting_transcript.json
             meeting_transcript.txt
+            meeting_transcript.html
             evaluation.json
           retention-days: 30
