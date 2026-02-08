@@ -29,10 +29,10 @@ def get_token() -> str | None:
 
 
 def find_audio_webm() -> Path | None:
-    """Önce 'ses' içeren .webm, yoksa ilk .webm dosyasını döndürür."""
+    """Önce 'ses' içeren .webm, yoksa ilk .webm dosyasını döndürür. Alt klasörler dahil (rglob)."""
     if not MEETING_DATA.exists():
         return None
-    webms = list(MEETING_DATA.glob("*.webm"))
+    webms = sorted(MEETING_DATA.rglob("*.webm"))  # alt klasörler dahil (download altına indiriyor)
     if not webms:
         return None
     for w in webms:

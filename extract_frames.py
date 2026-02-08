@@ -12,6 +12,8 @@ FRAME_INTERVAL = 0.5  # saniye
 WIDTH, HEIGHT = 224, 224
 INPUT_DIR = Path("meeting_data")
 OUTPUT_DIR = Path("frames")
+# Sadece ses içeren .webm'leri atla (video track yok, frame çıkarılamaz)
+AUDIO_ONLY_NAME_HINTS = ("ses", "audio", "sound", "toplanti_sesi", "meeting_audio")
 
 
 def extract_from_video(video_path: Path) -> Path | None:
@@ -39,10 +41,12 @@ def main():
     INPUT_DIR.mkdir(exist_ok=True)
     OUTPUT_DIR.mkdir(exist_ok=True)
     webms = list(INPUT_DIR.rglob("*.webm"))
-    if not webms:
-        print("meeting_data altında .webm bulunamadı.")
-        return 1
-    for v in webms:
+    # Sadece video içerenleri al (ses .webm atlansın)
+    video_webms = [v for v in webms if not any(h in v.name.lower() for h in AUDIO_ONLY_NAME_HINTS)]
+    if not video_webms:
+        print("meeting_data altında (ses dışı) .webm bulunamadı.")
+        return 0
+    for v in video_webms:
         print("Frame çıkarılıyor:", v.name)
         extract_from_video(v)
     print("Frame çıkarma tamamlandı:", OUTPUT_DIR)
