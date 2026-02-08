@@ -61,6 +61,14 @@ def run_transcription(wav_path: Path, hf_token: str) -> dict | None:
     """WhisperX: transcribe -> align -> diarize -> assign_word_speakers. Dönen sonuç segments içerir."""
     try:
         import torch
+        # PyTorch 2.6+ weights_only=True: pyannote VAD checkpoint (omegaconf) yüklenebilsin
+        if hasattr(torch.serialization, "add_safe_globals"):
+            try:
+                from omegaconf.listconfig import ListConfig
+                from omegaconf.dictconfig import DictConfig
+                torch.serialization.add_safe_globals([ListConfig, DictConfig])
+            except Exception:
+                pass
         import whisperx
         from whisperx.diarize import DiarizationPipeline, assign_word_speakers
     except ImportError as e:
