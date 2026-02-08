@@ -58,8 +58,11 @@ jobs:
       - name: Evaluate frames (DAiSEE)
         run: npm run evaluate
 
-      - name: Generate meeting report
+      - name: Generate meeting report (MD)
         run: python generate_report.py
+
+      - name: Generate HTML report (grafikli)
+        run: python generate_report_html.py
 
       - name: Upload report to HF (toplantı klasörüne)
         env:
@@ -73,5 +76,6 @@ jobs:
           path: |
             latest_meeting.json
             meeting_report.md
+            meeting_report.html
             evaluation.json
           retention-days: 30

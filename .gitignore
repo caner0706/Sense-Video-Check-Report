@@ -7,5 +7,6 @@ meeting_data/
 frames/
 evaluation.json
 meeting_report.md
+meeting_report.html
 latest_meeting.json
 node_modules/

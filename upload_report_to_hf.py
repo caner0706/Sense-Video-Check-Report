@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Üretilen toplantı raporunu (meeting_report.md) HF'deki analiz edilen toplantı klasörüne yükler.
-Dosya adı: toplanti_raporu.md
+Üretilen toplantı raporlarını (meeting_report.md, meeting_report.html) HF'deki
+analiz edilen toplantı klasörüne yükler: toplanti_raporu.md, toplanti_raporu.html
 """
 import json
 import os
@@ -12,8 +12,10 @@ from huggingface_hub import HfApi
 REPO_ID = "Caner7/Sense-AI"
 MEETINGS_FOLDER = "Toplantı Kayıtları"
 LATEST_MEETING_JSON = Path("latest_meeting.json")
-REPORT_PATH = Path("meeting_report.md")
-REPORT_FILENAME = "toplanti_raporu.md"
+UPLOADS = [
+    (Path("meeting_report.md"), "toplanti_raporu.md"),
+    (Path("meeting_report.html"), "toplanti_raporu.html"),
+]
 
 
 def get_token():
@@ -21,9 +23,6 @@ def get_token():
 
 
 def main():
-    if not REPORT_PATH.exists():
-        print("HATA: meeting_report.md bulunamadı.")
-        return 1
     if not LATEST_MEETING_JSON.exists():
         print("HATA: latest_meeting.json bulunamadı.")
         return 1
@@ -38,15 +37,18 @@ def main():
         print("HATA: SENSEAI veya HF_TOKEN ortam değişkeni gerekli.")
         return 1
 
-    path_in_repo = f"{MEETINGS_FOLDER}/{latest_folder}/{REPORT_FILENAME}"
     api = HfApi(token=token)
-    api.upload_file(
-        path_or_fileobj=str(REPORT_PATH),
-        path_in_repo=path_in_repo,
-        repo_id=REPO_ID,
-        repo_type="dataset",
-    )
-    print("Rapor HF'e yüklendi:", path_in_repo)
+    for local_path, filename in UPLOADS:
+        if not local_path.exists():
+            continue
+        path_in_repo = f"{MEETINGS_FOLDER}/{latest_folder}/{filename}"
+        api.upload_file(
+            path_or_fileobj=str(local_path),
+            path_in_repo=path_in_repo,
+            repo_id=REPO_ID,
+            repo_type="dataset",
+        )
+        print("Yüklendi:", path_in_repo)
     return 0
 
 

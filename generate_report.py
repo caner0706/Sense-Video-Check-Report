@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 evaluation.json (DAiSEE) ile meeting_data/.txt dosyasını birleştirir.
-Birden fazla katılımcı (her biri bir ekran kaydı) için ayrı ayrı analiz + toplu özet;
-tek bir toplantı raporu üretir.
+Katılımcı sayısı sabit değildir: toplantıdaki ekran kaydı ve txt dosyasına göre
+kaç kişi varsa o kadar katılımcı bölümü + toplu özet ile tek rapor üretilir.
 """
 import json
 from pathlib import Path
@@ -99,17 +99,27 @@ def main():
     eval_data = load_evaluation()
     videos = eval_data.get("videos") or {}
 
-    # Katılımcı bazlı bölümler
+    # Katılımcı sayısı = analiz edilen ekran kaydı sayısı (dinamik)
+    num_participants = len(videos)
+    if num_participants == 0:
+        participant_label = "Analiz edilen ekran kaydı yok."
+    elif num_participants == 1:
+        participant_label = "1 katılımcı"
+    else:
+        participant_label = f"{num_participants} katılımcı"
+
+    # Katılımcı bazlı bölümler (toplantıda kaç kişi varsa o kadar bölüm)
     participant_sections = []
     for i, (video_name, data) in enumerate(sorted(videos.items())):
         participant_sections.append(participant_section(video_name, data, i))
-    participants_md = "\n".join(participant_sections) if participant_sections else "*Ekran kaydı analizi yok.*"
+    participants_md = "\n".join(participant_sections) if participant_sections else "*Bu toplantıda analiz edilen ekran kaydı bulunmuyor.*"
     combined_md = combined_summary(eval_data)
 
     report = f"""# Toplantı analiz raporu
 
 **Toplantı klasörü:** `{latest_folder}`  
-**Analiz:** Ekran kayıtları 0.5 s aralıklarla frame’lere bölündü; DAiSEE modeli ile değerlendirildi.
+**Katılımcı sayısı:** {participant_label} (ekran kaydı sayısına göre dinamik)  
+**Analiz:** Her katılımcının ekran kaydı 0.5 s aralıklarla frame'lere bölündü; DAiSEE modeli ile değerlendirildi.
 
 ---
 

@@ -11,4 +11,5 @@ Toplantı kayıtlarını HF'den alır, ekran kayıtlarından frame çıkarır, D
    - .webm’lerden **0.5 saniye** aralıklarla frame çıkarır (224×224).  
    - **DAiSEE** modeli ile her frame’i değerlendirir (engagement / boredom / confusion / frustration).  
    - **Birden fazla katılımcı** (her ekran kaydı = bir katılımcı) için ayrı ayrı analiz + **toplu özet** ile tek rapor üretir.  
-   - Rapor **HF’deki ilgili toplantı klasörüne** `toplanti_raporu.md` olarak yüklenir; ayrıca artifact olarak da saklanır.
+   - **Görsel rapor:** Grafikli HTML (`toplanti_raporu.html`) — kim ne kadar aktif (zaman serisi), kim ne zaman etkisiz (tablo), ortalama dağılım (çubuk grafik).
+   - Raporlar HF'deki ilgili toplantı klasörüne `toplanti_raporu.md` ve `toplanti_raporu.html` olarak yüklenir; artifact olarak da saklanır.
