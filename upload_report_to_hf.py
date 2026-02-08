@@ -15,6 +15,8 @@ LATEST_MEETING_JSON = Path("latest_meeting.json")
 UPLOADS = [
     (Path("meeting_report.md"), "toplanti_raporu.md"),
     (Path("meeting_report.html"), "toplanti_raporu.html"),
+    (Path("meeting_transcript.json"), "toplanti_transkripti.json"),
+    (Path("meeting_transcript.txt"), "toplanti_transkripti.txt"),
 ]
 
 

@@ -52,6 +52,11 @@ jobs:
           SENSEAI: ${{ secrets.SENSEAI }}
         run: python download_meeting.py
 
+      - name: Transcribe meeting (kim ne dedi — WhisperX + pyannote)
+        env:
+          SENSEAI: ${{ secrets.SENSEAI }}
+        run: python transcribe_meeting.py
+
       - name: Extract frames (0.5s)
         run: python extract_frames.py
 
@@ -77,5 +82,7 @@ jobs:
             latest_meeting.json
             meeting_report.md
             meeting_report.html
+            meeting_transcript.json
+            meeting_transcript.txt
             evaluation.json
           retention-days: 30
