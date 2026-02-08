@@ -27,29 +27,30 @@ def get_token() -> str | None:
     return os.environ.get("SENSEAI") or os.environ.get("HF_TOKEN")
 
 
-def parse_folder_name(name: str) -> tuple[str, str, int] | None:
+def parse_folder_name(name: str) -> tuple[str, str, str] | None:
     '''
-    Klasör adından sıralama anahtarı döner (tarih, saat, numara).
-    - "D1_2026-02-08_02-09" -> ("2026-02-08", "02-09", 1)  # tarih + saat
-    - "hf3_2026-02-08" veya "gt1_2026-02-08" -> ("2026-02-08", "", 3)
+    Klasör adından sıralama anahtarı döner (tarih, saat, isim).
+    Önek kullanıcıya bırakılmıştır (D1, hf, gt, vs. ne olursa olsun).
+    - "Herhangi_2026-02-08_02-09" -> ("2026-02-08", "02-09", name)  # tarih + saat
+    - "Herhangi_2026-02-08" -> ("2026-02-08", "", name)  # sadece tarih
     '''
     s = name.strip()
-    # D1_2026-02-08_02-09 (tarih + saat)
-    m = re.match(r"D(\d+)_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2})$", s, re.IGNORECASE)
+    # *_YYYY-MM-DD_HH-MM (tarih + saat; önek serbest)
+    m = re.match(r"(.+)_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2})$", s)
     if m:
-        return (m.group(2), m.group(3), int(m.group(1)))
-    # hf3_2026-02-08 / gt1_2026-02-08 (sadece tarih)
-    m = re.match(r"(?:hf|gt)(\d+)_(\d{4}-\d{2}-\d{2})$", s, re.IGNORECASE)
+        return (m.group(2), m.group(3), s)
+    # *_YYYY-MM-DD (sadece tarih; önek serbest)
+    m = re.match(r"(.+)_(\d{4}-\d{2}-\d{2})$", s)
     if m:
-        return (m.group(2), "", int(m.group(1)))
+        return (m.group(2), "", s)
     return None
 
 
 def get_latest_meeting_folder(hffs: HfFileSystem) -> str | None:
     """
-    'Toplantı Kayıtları' altındaki alt klasörleri listeler;
-    D1_YYYY-MM-DD_HH-MM, hfN_YYYY-MM-DD, gtN_YYYY-MM-DD formatlarında
-    en son (tarih + saat) olanı döner.
+    'Toplantı Kayıtları' altındaki alt klasörleri listeler.
+    İsim formatı: (önek serbest)_YYYY-MM-DD veya (önek serbest)_YYYY-MM-DD_HH-MM.
+    En son (tarih + saat) olanı döner.
     """
     try:
         entries = hffs.ls(BASE_PATH, detail=False)
@@ -57,7 +58,7 @@ def get_latest_meeting_folder(hffs: HfFileSystem) -> str | None:
         print(f"Klasör listelenemedi: {e}")
         return None
 
-    folders: list[tuple[tuple[str, str, int], str]] = []
+    folders: list[tuple[tuple[str, str, str], str]] = []
     for path in entries:
         parts = path.rstrip("/").split("/")
         if len(parts) < 2:
@@ -70,7 +71,7 @@ def get_latest_meeting_folder(hffs: HfFileSystem) -> str | None:
     if not folders:
         return None
 
-    # En son: önce tarih, sonra saat, sonra numara (hepsi büyükten küçüğe)
+    # En son: önce tarih, sonra saat, sonra isim (büyükten küçüğe)
     folders.sort(key=lambda x: (x[0][0], x[0][1], x[0][2]), reverse=True)
     return folders[0][1]
 
