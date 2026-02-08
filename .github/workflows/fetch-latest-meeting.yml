@@ -6,10 +6,9 @@ name: Fetch latest meeting data
 on:
   push:
     branches: [main]
-  schedule:
-    # Her 15 dakikada bir çalışır; HF'ye yeni veri gelince en geç 15 dk içinde işlenir
-    - cron: "*/15 * * * *"
   workflow_dispatch: {}
+  repository_dispatch:
+    types: [hf_dataset_update]
 
 jobs:
   fetch:
@@ -26,7 +25,21 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Fetch latest meeting from HF
+      - name: Fetch latest meeting info from HF
         env:
           SENSEAI: ${{ secrets.SENSEAI }}
+          OUTPUT_JSON: latest_meeting.json
         run: python get_latest_meeting.py
+
+      - name: Download latest meeting files
+        env:
+          SENSEAI: ${{ secrets.SENSEAI }}
+          LATEST_MEETING_JSON: latest_meeting.json
+          DOWNLOAD_DIR: latest_meeting
+        run: python download_latest_meeting.py
+
+      - name: Summary
+        run: |
+          echo "En son toplantı verisi hazır: latest_meeting.json + latest_meeting/"
+          ls -la latest_meeting.json 2>/dev/null || true
+          find latest_meeting -type f 2>/dev/null || true

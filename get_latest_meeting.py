@@ -27,10 +27,10 @@ def get_token() -> str | None:
 
 def parse_folder_name(name: str) -> tuple[str, int] | None:
     '''
-    "hf3_2026-02-08" -> ("2026-02-08", 3).
-    Sıralama için (tarih, numara) döner.
+    "hf3_2026-02-08" veya "gt1_2026-02-08" -> ("2026-02-08", num).
+    Sıralama için (tarih, numara) döner. hf/gt vb. prefix desteklenir.
     '''
-    m = re.match(r"hf(\d+)_(\d{4}-\d{2}-\d{2})$", name.strip())
+    m = re.match(r"^[a-zA-Z]+(\d+)_(\d{4}-\d{2}-\d{2})$", name.strip())
     if not m:
         return None
     num, date = int(m.group(1)), m.group(2)
@@ -55,8 +55,6 @@ def get_latest_meeting_folder(hffs: HfFileSystem) -> str | None:
         if len(parts) < 2:
             continue
         folder_name = parts[-1]
-        if not folder_name.startswith("hf"):
-            continue
         parsed = parse_folder_name(folder_name)
         if parsed:
             folders.append((parsed, folder_name))
@@ -133,13 +131,24 @@ def get_latest_meeting_data(token: str | None = None) -> dict:
 
 
 def main():
+    import json
     from dotenv import load_dotenv
     load_dotenv()
 
     data = get_latest_meeting_data()
+    output_json = os.environ.get("OUTPUT_JSON")
+
     if not data["ok"]:
         print("HATA:", data["error"])
+        if output_json:
+            with open(output_json, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
         return 1
+
+    if output_json:
+        with open(output_json, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print("Çıktı:", output_json)
 
     print("En son toplantı klasörü:", data["latest_folder"])
     print("Path:", data["base_path"])
